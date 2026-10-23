@@ -24,4 +24,6 @@ bun run build
 
 Actions are `{ "type": "submit" | "postback" | "openUrl", "id", "url"?, "payload"? }`. A `submit` sends the values of every named field as `formValues`. The **Action log** under the preview shows the exact event the backend would receive.
 
+**Docs** in the toolbar (or press `?`) opens a side panel covering every component. Each one has a live preview, example JSON you can copy or insert into the card, and a field table. The field tables are generated from the schema, so they stay in sync with it. Hand-written summaries and examples live in `src/docs/components.ts`.
+
 The source of truth is `src/schema/card.ts` (zod). **JSON Schema** in the toolbar downloads the generated `card.schema.json`, which backends can use to validate payloads. **Share** puts the current JSON in the URL hash and copies the link.

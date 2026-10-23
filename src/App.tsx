@@ -1,4 +1,4 @@
-import { BracesIcon, ChevronDownIcon, DownloadIcon, LayoutTemplateIcon, Link2Icon, TriangleAlertIcon } from "lucide-react"
+import { BookOpenIcon, BracesIcon, ChevronDownIcon, DownloadIcon, LayoutTemplateIcon, Link2Icon, TriangleAlertIcon } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -10,6 +10,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
+import { DocsSheet } from "@/docs/DocsSheet"
+import { insertNode } from "@/docs/insertNode"
 import { ErrorList } from "@/editor/ErrorList"
 import { JsonEditor, type JsonEditorHandle } from "@/editor/JsonEditor"
 import { decodeCardHash, shareUrl } from "@/lib/share"
@@ -17,7 +19,7 @@ import { ActionLog } from "@/preview/ActionLog"
 import { ChatPreview } from "@/preview/ChatPreview"
 import { CardRenderer } from "@/renderer/CardRenderer"
 import type { ActionEvent } from "@/renderer/context"
-import { type Card, parseCard } from "@/schema/card"
+import { type Card, type CardNode, parseCard } from "@/schema/card"
 import { downloadJsonSchema } from "@/schema/json-schema"
 import { templates, templateSource } from "@/templates"
 
@@ -39,6 +41,7 @@ export default function App() {
   const [source, setSource] = useState(initialSource)
   const [events, setEvents] = useState<ActionEvent[]>([])
   const [lastValid, setLastValid] = useState<Card | null>(null)
+  const [docsOpen, setDocsOpen] = useState(false)
 
   const debouncedSource = useDebounced(source, 150)
   const result = useMemo(() => parseCard(debouncedSource), [debouncedSource])
@@ -50,6 +53,30 @@ export default function App() {
 
   const handleAction = useCallback((event: ActionEvent) => {
     setEvents((prev) => [event, ...prev])
+  }, [])
+
+  // Checked against the live source (not the debounced one) so Insert never acts on stale text.
+  const canInsert = useMemo(() => docsOpen && parseCard(source).ok, [docsOpen, source])
+
+  const handleInsert = (node: CardNode) => {
+    const next = insertNode(source, node)
+    if (!next) return
+    setSource(next)
+    setDocsOpen(false)
+    toast.success(`Added ${node.type} to the card`)
+  }
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "?" || e.metaKey || e.ctrlKey || e.altKey) return
+      const target = e.target as HTMLElement | null
+      // Monaco types into a hidden textarea, so this also skips the editor.
+      if (target?.closest("input, textarea, select, [contenteditable=true]")) return
+      e.preventDefault()
+      setDocsOpen(true)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
   }, [])
 
   const handleShare = async () => {
@@ -86,6 +113,9 @@ export default function App() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+        <Button variant="outline" size="sm" onClick={() => setDocsOpen(true)} title="Component docs (?)">
+          <BookOpenIcon /> Docs
+        </Button>
         <Button variant="outline" size="sm" onClick={() => editorRef.current?.format()}>
           Format
         </Button>
@@ -133,6 +163,13 @@ export default function App() {
           </ResizablePanelGroup>
         </ResizablePanel>
       </ResizablePanelGroup>
+      <DocsSheet
+        open={docsOpen}
+        onOpenChange={setDocsOpen}
+        canInsert={canInsert}
+        onInsert={handleInsert}
+        onAction={handleAction}
+      />
     </div>
   )
 }
