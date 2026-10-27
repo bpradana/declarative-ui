@@ -26,7 +26,7 @@ Actions are `{ "type": "submit" | "postback" | "openUrl", "id", "url"?, "payload
 
 **Docs** in the toolbar (or press `?`) opens a side panel covering every component. Each one has several live examples whose JSON you can copy or insert into the card, and a field table. The field tables are generated from the schema, so they stay in sync with it. Hand-written summaries and examples live in `src/docs/components.ts`.
 
-**Templates** has 14 ready-made cards grouped by category (payments, workflow, forms, commerce, notifications, layout). They live in `src/templates/index.ts`.
+**Templates** has 15 ready-made cards grouped by category (payments, workflow, forms, commerce, notifications, layout). They live in `src/templates/index.ts`.
 
 The source of truth is `src/schema/card.ts` (zod). **JSON Schema** in the toolbar downloads the generated `card.schema.json`, which backends can use to validate payloads. **Share** puts the current JSON in the URL hash and copies the link.
 

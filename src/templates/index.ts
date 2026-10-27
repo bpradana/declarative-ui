@@ -470,6 +470,81 @@ export const templates: Template[] = [
     },
   },
   {
+    id: "flight",
+    name: "Flight ticket",
+    category: "Commerce",
+    card: {
+      version: "1",
+      type: "card",
+      id: "flight-GA-404",
+      children: [
+        {
+          type: "stack",
+          direction: "horizontal",
+          align: "between",
+          children: [
+            { type: "text", content: "GA 404 · Mon, 10 Nov", variant: "muted" },
+            { type: "badge", label: "On time", variant: "secondary" },
+          ],
+        },
+        {
+          type: "stack",
+          direction: "horizontal",
+          align: "between",
+          children: [
+            {
+              type: "stack",
+              gap: "sm",
+              children: [
+                { type: "text", content: "07:15", variant: "title" },
+                { type: "text", content: "CGK · Jakarta", variant: "caption" },
+              ],
+            },
+            { type: "text", content: "✈ 1h 55m", variant: "caption" },
+            {
+              type: "stack",
+              gap: "sm",
+              align: "end",
+              children: [
+                { type: "text", content: "10:10", variant: "title" },
+                { type: "text", content: "DPS · Bali", variant: "caption" },
+              ],
+            },
+          ],
+        },
+        { type: "divider" },
+        {
+          type: "keyValue",
+          items: [
+            { label: "Airline", value: "Garuda Indonesia" },
+            { label: "Passenger", value: "Rina Wulandari" },
+            { label: "Booking code", value: "XK7Q2P" },
+            { label: "Terminal / Gate", value: "3 / 12" },
+            { label: "Seat", value: "24A · Economy" },
+            { label: "Baggage", value: "20 kg" },
+          ],
+        },
+        { type: "text", content: "Boarding closes 20 minutes before departure.", variant: "caption" },
+        {
+          type: "actions",
+          children: [
+            {
+              type: "button",
+              label: "Change seat",
+              variant: "outline",
+              action: { type: "postback", id: "flight_change_seat", payload: { bookingCode: "XK7Q2P" } },
+            },
+            {
+              type: "button",
+              label: "Check in",
+              action: { type: "openUrl", id: "flight_check_in", url: "https://example.com/check-in/XK7Q2P" },
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     id: "incident",
     name: "Incident alert",
     category: "Notifications",
