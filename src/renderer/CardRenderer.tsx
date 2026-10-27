@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from "react"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import type { Action, Card as CardModel, CardNode } from "@/schema/card"
-import { type ActionEvent, type FormValue, type FormValues, type Inspect, RendererContext } from "./context"
+import { type ActionEvent, type BlockedSubmit, type FormValue, type FormValues, type Inspect, RendererContext } from "./context"
 import { NodeView } from "./nodes"
+import { validateFields } from "./validation"
 
 function collectFieldDefaults(nodes: CardNode[], out: FormValues = {}): FormValues {
   for (const node of nodes) {
@@ -26,10 +27,12 @@ function collectFieldDefaults(nodes: CardNode[], out: FormValues = {}): FormValu
 export function CardRenderer({
   card,
   onAction,
+  onBlocked,
   inspect,
 }: {
   card: CardModel
   onAction: (event: ActionEvent) => void
+  onBlocked?: (entry: BlockedSubmit) => void
   inspect?: Inspect
 }) {
   // Values persist across edits so typing in the preview survives JSON changes;
@@ -43,12 +46,27 @@ export function CardRenderer({
     return merged
   }, [defaults, edited])
 
+  // After a blocked submit, errors are re-checked on every change so they clear as fields are fixed.
+  const [showErrors, setShowErrors] = useState(false)
+  const errors = useMemo(
+    () => (showErrors ? validateFields(card.children, values) : {}),
+    [showErrors, card.children, values],
+  )
+
   const setValue = useCallback((name: string, value: FormValue) => {
     setEdited((prev) => ({ ...prev, [name]: value }))
   }, [])
 
   const trigger = useCallback(
     (action: Action) => {
+      if (action.type === "submit") {
+        const invalid = validateFields(card.children, values)
+        setShowErrors(Object.keys(invalid).length > 0)
+        if (Object.keys(invalid).length > 0) {
+          onBlocked?.({ cardId: card.id, actionId: action.id, errors: invalid, timestamp: new Date().toISOString() })
+          return
+        }
+      }
       const event: ActionEvent = {
         cardId: card.id,
         actionId: action.id,
@@ -63,7 +81,7 @@ export function CardRenderer({
         window.open(action.url, "_blank", "noopener,noreferrer")
       }
     },
-    [card.id, values, onAction],
+    [card.id, card.children, values, onAction, onBlocked],
   )
 
   // Trailing `actions` nodes become the card footer.
@@ -84,7 +102,7 @@ export function CardRenderer({
   }
 
   return (
-    <RendererContext.Provider value={{ values, setValue, trigger, inspect }}>
+    <RendererContext.Provider value={{ values, setValue, trigger, errors, inspect }}>
       <Card
         className="w-full gap-0 py-0"
         onPointerDownCapture={inspect && intercept}

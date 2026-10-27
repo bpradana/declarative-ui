@@ -51,24 +51,60 @@ const alignClass = {
   between: "justify-between",
 } as const
 
-function Field({ id, label, children }: { id: string; label?: string; children: React.ReactNode }) {
+function FieldError({ id, error }: { id: string; error?: string }) {
+  if (!error) return null
+  return (
+    <p id={`${id}-error`} className="text-xs text-destructive">
+      {error}
+    </p>
+  )
+}
+
+/** Props wiring a control to its validation error for styling and screen readers. */
+const invalidProps = (id: string, error?: string) =>
+  error ? { "aria-invalid": true, "aria-describedby": `${id}-error` } : {}
+
+function Field({
+  id,
+  label,
+  required,
+  error,
+  children,
+}: {
+  id: string
+  label?: string
+  required?: boolean
+  error?: string
+  children: React.ReactNode
+}) {
   return (
     <div className="flex flex-col gap-1.5">
-      {label && <Label htmlFor={id}>{label}</Label>}
+      {label && (
+        <Label htmlFor={id}>
+          {label}
+          {required && (
+            <span className="text-destructive" aria-hidden>
+              *
+            </span>
+          )}
+        </Label>
+      )}
       {children}
+      <FieldError id={id} error={error} />
     </div>
   )
 }
 
 function InputView({ node }: { node: NodeOf<"input"> }) {
   const id = useId()
-  const { values, setValue } = useRenderer()
+  const { values, setValue, errors } = useRenderer()
   return (
-    <Field id={id} label={node.label}>
+    <Field id={id} label={node.label} required={node.required} error={errors[node.name]}>
       <Input
         id={id}
         type={node.inputType ?? "text"}
         placeholder={node.placeholder}
+        {...invalidProps(id, errors[node.name])}
         value={String(values[node.name] ?? "")}
         onChange={(e) => setValue(node.name, e.target.value)}
       />
@@ -78,12 +114,13 @@ function InputView({ node }: { node: NodeOf<"input"> }) {
 
 function TextareaView({ node }: { node: NodeOf<"textarea"> }) {
   const id = useId()
-  const { values, setValue } = useRenderer()
+  const { values, setValue, errors } = useRenderer()
   return (
-    <Field id={id} label={node.label}>
+    <Field id={id} label={node.label} required={node.required} error={errors[node.name]}>
       <Textarea
         id={id}
         placeholder={node.placeholder}
+        {...invalidProps(id, errors[node.name])}
         value={String(values[node.name] ?? "")}
         onChange={(e) => setValue(node.name, e.target.value)}
       />
@@ -93,11 +130,11 @@ function TextareaView({ node }: { node: NodeOf<"textarea"> }) {
 
 function SelectView({ node }: { node: NodeOf<"select"> }) {
   const id = useId()
-  const { values, setValue } = useRenderer()
+  const { values, setValue, errors } = useRenderer()
   return (
-    <Field id={id} label={node.label}>
+    <Field id={id} label={node.label} required={node.required} error={errors[node.name]}>
       <Select value={String(values[node.name] ?? "")} onValueChange={(v) => setValue(node.name, v)}>
-        <SelectTrigger id={id} className="w-full">
+        <SelectTrigger id={id} className="w-full" {...invalidProps(id, errors[node.name])}>
           <SelectValue placeholder={node.placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -114,13 +151,21 @@ function SelectView({ node }: { node: NodeOf<"select"> }) {
 
 function CheckboxView({ node }: { node: NodeOf<"checkbox"> }) {
   const id = useId()
-  const { values, setValue } = useRenderer()
+  const { values, setValue, errors } = useRenderer()
   return (
-    <div className="flex items-center gap-2">
-      <Checkbox id={id} checked={values[node.name] === true} onCheckedChange={(c) => setValue(node.name, c === true)} />
-      <Label htmlFor={id} className="font-normal">
-        {node.label}
-      </Label>
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id={id}
+          checked={values[node.name] === true}
+          onCheckedChange={(c) => setValue(node.name, c === true)}
+          {...invalidProps(id, errors[node.name])}
+        />
+        <Label htmlFor={id} className="font-normal">
+          {node.label}
+        </Label>
+      </div>
+      <FieldError id={id} error={errors[node.name]} />
     </div>
   )
 }

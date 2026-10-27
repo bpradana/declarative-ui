@@ -87,6 +87,7 @@ function Field(props: FieldProps) {
   if (schema.$ref === "#/$defs/Action") return <ActionField {...props} />
   if (schema.enum) return <EnumField {...props} />
   if (schema.type === "boolean") return <BooleanField {...props} />
+  if (schema.type === "integer" || schema.type === "number") return <NumberField {...props} />
   if (schema.type === "array") return <ArrayField {...props} />
   if (schema.type === "object") return schema.properties ? <NestedObjectField {...props} /> : <JsonField {...props} />
   return <StringField {...props} />
@@ -115,6 +116,24 @@ function StringField({ name, schema, required, value, onChange }: FieldProps) {
         value={typeof value === "string" ? value : value === undefined ? "" : String(value)}
         // Optional strings are removed when cleared so the JSON stays minimal.
         onChange={(e) => onChange(e.target.value === "" && !required ? undefined : e.target.value)}
+      />
+    </div>
+  )
+}
+
+function NumberField({ name, schema, required, value, onChange }: FieldProps) {
+  const id = useId()
+  return (
+    <div className="flex flex-col gap-1.5">
+      <FieldLabel id={id} name={name} required={required} schema={schema} />
+      <Input
+        id={id}
+        type="number"
+        inputMode="numeric"
+        min={0}
+        step={schema.type === "integer" ? 1 : "any"}
+        value={typeof value === "number" ? value : ""}
+        onChange={(e) => onChange(e.target.value === "" ? (required ? 0 : undefined) : Number(e.target.value))}
       />
     </div>
   )

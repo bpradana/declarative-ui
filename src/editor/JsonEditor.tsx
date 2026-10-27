@@ -1,6 +1,6 @@
 import Editor, { type OnMount } from "@monaco-editor/react"
 import { findNodeAtLocation, parseTree } from "jsonc-parser"
-import { forwardRef, useImperativeHandle, useRef } from "react"
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react"
 import "./monaco"
 import type { monaco } from "./monaco"
 
@@ -12,10 +12,21 @@ export type JsonEditorHandle = {
 type Props = {
   value: string
   onChange: (value: string) => void
+  /** Undo/redo go to the app's shared history instead of Monaco's own stack. */
+  onUndo: () => void
+  onRedo: () => void
 }
 
-export const JsonEditor = forwardRef<JsonEditorHandle, Props>(function JsonEditor({ value, onChange }, ref) {
+export const JsonEditor = forwardRef<JsonEditorHandle, Props>(function JsonEditor(
+  { value, onChange, onUndo, onRedo },
+  ref,
+) {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
+  // Commands are registered once on mount, so they read the latest callbacks through a ref.
+  const historyRef = useRef({ onUndo, onRedo })
+  useEffect(() => {
+    historyRef.current = { onUndo, onRedo }
+  })
 
   useImperativeHandle(ref, () => ({
     format() {
@@ -40,8 +51,12 @@ export const JsonEditor = forwardRef<JsonEditorHandle, Props>(function JsonEdito
     },
   }))
 
-  const handleMount: OnMount = (editor) => {
+  const handleMount: OnMount = (editor, m) => {
     editorRef.current = editor
+    const { KeyMod, KeyCode } = m
+    editor.addCommand(KeyMod.CtrlCmd | KeyCode.KeyZ, () => historyRef.current.onUndo())
+    editor.addCommand(KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyZ, () => historyRef.current.onRedo())
+    editor.addCommand(KeyMod.CtrlCmd | KeyCode.KeyY, () => historyRef.current.onRedo())
   }
 
   return (

@@ -286,6 +286,18 @@ export const componentDocs: ComponentDoc[] = [
       { title: "Text", node: { type: "input", name: "fullName", label: "Full name", placeholder: "Rina Wulandari" } },
       { title: "Number", node: { type: "input", name: "quantity", label: "Quantity", placeholder: "1", inputType: "number" } },
       { title: "No label", node: { type: "input", name: "search", placeholder: "Search orders…" } },
+      {
+        title: "With validation",
+        node: {
+          type: "input",
+          name: "postalCode",
+          label: "Postal code",
+          placeholder: "12345",
+          required: true,
+          pattern: "\\d{5}",
+          patternMessage: "Postal codes have 5 digits",
+        },
+      },
     ],
     notes: ["`name` must be unique within the card. It becomes the key in `formValues`."],
   },
@@ -296,6 +308,10 @@ export const componentDocs: ComponentDoc[] = [
     examples: [
       { title: "With label", node: { type: "textarea", name: "comment", label: "Comments", placeholder: "Tell us more" } },
       { title: "No label", node: { type: "textarea", name: "reason", placeholder: "Reason for cancelling (optional)" } },
+      {
+        title: "With validation",
+        node: { type: "textarea", name: "summary", label: "Summary", required: true, minLength: 10, maxLength: 200 },
+      },
     ],
   },
   {
@@ -331,6 +347,21 @@ export const componentDocs: ComponentDoc[] = [
           ],
         },
       },
+      {
+        title: "Required",
+        node: {
+          type: "select",
+          name: "size",
+          label: "Size",
+          placeholder: "Choose a size",
+          required: true,
+          options: [
+            { label: "S", value: "s" },
+            { label: "M", value: "m" },
+            { label: "L", value: "l" },
+          ],
+        },
+      },
     ],
     notes: ["Sends `\"\"` if nothing was chosen."],
   },
@@ -341,6 +372,7 @@ export const componentDocs: ComponentDoc[] = [
     examples: [
       { title: "Checked by default", node: { type: "checkbox", name: "subscribe", label: "Email me about updates", defaultChecked: true } },
       { title: "Unchecked", node: { type: "checkbox", name: "agree", label: "I agree to the terms" } },
+      { title: "Required", node: { type: "checkbox", name: "terms", label: "I accept the terms of service", required: true } },
     ],
     notes: ["Sends `true` or `false`."],
   },

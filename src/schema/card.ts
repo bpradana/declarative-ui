@@ -28,6 +28,26 @@ export const ActionSchema = z
 
 const BadgeVariant = z.enum(["default", "secondary", "destructive", "outline"])
 
+const isRegex = (source: string) => {
+  try {
+    new RegExp(source)
+    return true
+  } catch {
+    return false
+  }
+}
+
+const required = z.boolean().optional().describe("Block `submit` while the field is empty.")
+const lengthRules = {
+  minLength: z.number().int().min(0).optional().describe("Minimum number of characters (when not empty)."),
+  maxLength: z.number().int().min(0).optional().describe("Maximum number of characters."),
+}
+
+/** Rejects `minLength` > `maxLength` at the node level so the error points at `minLength`. */
+const lengthsInOrder = (node: { minLength?: number; maxLength?: number }) =>
+  node.minLength === undefined || node.maxLength === undefined || node.minLength <= node.maxLength
+const lengthsInOrderError = { message: "minLength must not be greater than maxLength", path: ["minLength"] }
+
 export const HeaderNodeSchema = z
   .strictObject({
     type: z.literal("header"),
@@ -128,8 +148,17 @@ export const InputNodeSchema = z
     inputType: z
       .enum(["text", "number", "email"])
       .optional()
-      .describe("Keyboard/validation hint. Values are always sent as strings."),
+      .describe("Keyboard hint. `email` and `number` are also checked on `submit`. Values are always sent as strings."),
+    required,
+    ...lengthRules,
+    pattern: z
+      .string()
+      .refine(isRegex, "Must be a valid regular expression")
+      .optional()
+      .describe("Regular expression the whole value must match (anchors are implied), e.g. `\\d{6}`."),
+    patternMessage: z.string().optional().describe("Error shown when `pattern` doesn't match."),
   })
+  .refine(lengthsInOrder, lengthsInOrderError)
   .meta({ id: "InputNode", description: "Single-line text field." })
 
 export const TextareaNodeSchema = z
@@ -138,7 +167,10 @@ export const TextareaNodeSchema = z
     name: z.string().min(1).describe("Key used in `formValues`."),
     label: z.string().optional().describe("Label above the field."),
     placeholder: z.string().optional().describe("Hint shown while empty."),
+    required,
+    ...lengthRules,
   })
+  .refine(lengthsInOrder, lengthsInOrderError)
   .meta({ id: "TextareaNode", description: "Multi-line text field." })
 
 export const SelectNodeSchema = z
@@ -151,6 +183,7 @@ export const SelectNodeSchema = z
       .array(z.strictObject({ label: z.string(), value: z.string() }))
       .min(1)
       .describe("Choices. `value` is what goes into `formValues`."),
+    required: z.boolean().optional().describe("Block `submit` until an option is chosen."),
   })
   .meta({ id: "SelectNode", description: "Dropdown with fixed options." })
 
@@ -160,6 +193,7 @@ export const CheckboxNodeSchema = z
     name: z.string().min(1).describe("Key used in `formValues`."),
     label: z.string().describe("Text next to the checkbox."),
     defaultChecked: z.boolean().optional().describe("Initial state. Defaults to false."),
+    required: z.boolean().optional().describe("Block `submit` until checked, e.g. for \"I agree\" boxes."),
   })
   .meta({ id: "CheckboxNode", description: "Boolean toggle." })
 

@@ -1,20 +1,35 @@
 import { CircleXIcon, PlusIcon } from "lucide-react"
 import { useMemo } from "react"
 import { Button } from "@/components/ui/button"
+import type { SetOptions } from "@/lib/use-history"
 import { docFor } from "@/docs/components"
 import { defForNodeType, defs } from "@/docs/props"
 import { type Card, type CardNode, formatPath, parseCard } from "@/schema/card"
 import { NODE_ICONS } from "./icons"
 import { AddNodeMenu, NodeTree, type TreeOp } from "./NodeTree"
 import { ObjectFields } from "./PropertyForm"
-import { duplicateNode, getNode, insertChild, looseCard, moveNode, type NodePath, removeNode, updateNode } from "./tree"
+import {
+  canMoveTo,
+  duplicateNode,
+  getNode,
+  insertChild,
+  looseCard,
+  moveNode,
+  moveNodeTo,
+  type NodePath,
+  removeNode,
+  updateNode,
+} from "./tree"
+
+/** Property-form edits coalesce like typing in the JSON editor, so one undo reverts a whole word. */
+const typing: SetOptions = { coalesce: "typing" }
 
 /** `[1, 0]` → `["children", 1, "children", 0]`, the path zod reports issues at. */
 const jsonPath = (path: NodePath) => path.flatMap((i) => ["children", i])
 
 type Props = {
   source: string
-  onSourceChange: (source: string) => void
+  onSourceChange: (source: string, opts?: SetOptions) => void
   selected: NodePath | null
   onSelect: (path: NodePath | null) => void
   onShowJson: () => void
@@ -39,8 +54,8 @@ export function VisualEditor({ source, onSourceChange, selected, onSelect, onSho
     )
   }
 
-  const commit = (next: Card, nextSelected?: NodePath | null) => {
-    onSourceChange(JSON.stringify(next, null, 2))
+  const commit = (next: Card, nextSelected?: NodePath | null, opts?: SetOptions) => {
+    onSourceChange(JSON.stringify(next, null, 2), opts)
     if (nextSelected !== undefined) onSelect(nextSelected)
   }
 
@@ -65,6 +80,11 @@ export function VisualEditor({ source, onSourceChange, selected, onSelect, onSho
     commit(added.card, added.path)
   }
 
+  const handleDrop = (from: NodePath, toParent: NodePath, toIndex: number) => {
+    const moved = moveNodeTo(card, from, toParent, toIndex)
+    if (moved) commit(moved.card, moved.path)
+  }
+
   const node = selected ? getNode(card, selected) : undefined
   const prefix = selected ? jsonPath(selected) : []
   const nodeIssues = issues.filter((issue) => prefix.every((p, i) => issue.path[i] === p))
@@ -80,7 +100,15 @@ export function VisualEditor({ source, onSourceChange, selected, onSelect, onSho
         </AddNodeMenu>
       </div>
       <div className="max-h-[45%] shrink-0 overflow-y-auto border-b">
-        <NodeTree nodes={card.children} selected={selected} onSelect={onSelect} onOp={handleOp} onAdd={handleAdd} />
+        <NodeTree
+          nodes={card.children}
+          selected={selected}
+          onSelect={onSelect}
+          onOp={handleOp}
+          onAdd={handleAdd}
+          canDrop={(from, toParent) => canMoveTo(card, from, toParent)}
+          onMove={handleDrop}
+        />
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
@@ -88,7 +116,7 @@ export function VisualEditor({ source, onSourceChange, selected, onSelect, onSho
           <NodeForm
             key={selected.join(".")}
             node={node}
-            onChange={(next) => commit(updateNode(card, selected, next))}
+            onChange={(next) => commit(updateNode(card, selected, next), undefined, typing)}
             issues={nodeIssues}
             prefixLength={prefix.length}
           />
@@ -101,7 +129,7 @@ export function VisualEditor({ source, onSourceChange, selected, onSelect, onSho
               </p>
             </div>
             <IssueList issues={nodeIssues} prefixLength={0} />
-            <ObjectFields schema={defs.Card} value={card} onChange={(next) => commit(next as Card)} />
+            <ObjectFields schema={defs.Card} value={card} onChange={(next) => commit(next as Card, undefined, typing)} />
           </div>
         )}
       </div>

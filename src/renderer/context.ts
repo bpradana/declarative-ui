@@ -15,6 +15,14 @@ export type ActionEvent = {
   timestamp: string
 }
 
+/** A `submit` that didn't go out because some fields failed validation. */
+export type BlockedSubmit = {
+  cardId?: string
+  actionId: string
+  errors: Record<string, string>
+  timestamp: string
+}
+
 /** When set, clicks select nodes instead of interacting with them (visual editor). */
 export type Inspect = {
   selected: NodePath | null
@@ -25,6 +33,8 @@ type RendererContextValue = {
   values: FormValues
   setValue: (name: string, value: FormValue) => void
   trigger: (action: Action) => void
+  /** Validation errors by field name; only filled after a blocked submit. */
+  errors: Record<string, string>
   inspect?: Inspect
 }
 

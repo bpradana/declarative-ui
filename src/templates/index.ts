@@ -149,6 +149,7 @@ export const templates: Template[] = [
           name: "rating",
           label: "Rating",
           placeholder: "Choose a rating",
+          required: true,
           options: [
             { label: "Excellent", value: "5" },
             { label: "Good", value: "4" },
@@ -239,7 +240,7 @@ export const templates: Template[] = [
             { label: "Fee", value: "Rp 0" },
           ],
         },
-        { type: "input", name: "reference", label: "Reference", placeholder: "e.g. Rent November" },
+        { type: "input", name: "reference", label: "Reference", placeholder: "e.g. Rent November", maxLength: 40 },
         { type: "text", content: "Transfers above Rp 10.000.000 need an extra PIN check.", variant: "caption" },
         {
           type: "actions",
@@ -270,7 +271,16 @@ export const templates: Template[] = [
       id: "otp-login",
       children: [
         { type: "header", title: "Enter verification code", subtitle: "Sent by SMS to +62 812-••••-3021" },
-        { type: "input", name: "code", label: "6-digit code", placeholder: "123456", inputType: "number" },
+        {
+          type: "input",
+          name: "code",
+          label: "6-digit code",
+          placeholder: "123456",
+          inputType: "number",
+          required: true,
+          pattern: "\\d{6}",
+          patternMessage: "Enter the 6 digits from the SMS",
+        },
         { type: "checkbox", name: "trustDevice", label: "Trust this device for 30 days" },
         { type: "text", content: "The code expires in 5 minutes.", variant: "caption" },
         {
@@ -303,6 +313,7 @@ export const templates: Template[] = [
           name: "venue",
           label: "Venue",
           placeholder: "Pick one",
+          required: true,
           options: [
             { label: "Bandung", value: "bandung" },
             { label: "Bali", value: "bali" },
@@ -357,7 +368,7 @@ export const templates: Template[] = [
           variant: "link",
           action: { type: "openUrl", id: "esign_open", url: "https://example.com/docs/DOC-5510" },
         },
-        { type: "checkbox", name: "agree", label: "I have read and agree to the document" },
+        { type: "checkbox", name: "agree", label: "I have read and agree to the document", required: true },
         {
           type: "actions",
           children: [

@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { CardRenderer } from "@/renderer/CardRenderer"
-import type { ActionEvent } from "@/renderer/context"
+import type { ActionEvent, BlockedSubmit } from "@/renderer/context"
 import type { Card, CardNode } from "@/schema/card"
 import { type ComponentDoc, componentDocs, type DocExample, docId, GROUPS } from "./components"
 import { getActionProps, getCardProps, getProps, type PropRow } from "./props"
@@ -25,6 +25,7 @@ const GUIDES = [
   { key: "card", title: "Card root" },
   { key: "actions-events", title: "Actions & events" },
   { key: "form-values", title: "Form values" },
+  { key: "validation", title: "Validation" },
 ] as const
 
 const exampleEvent: ActionEvent = {
@@ -33,6 +34,25 @@ const exampleEvent: ActionEvent = {
   type: "submit",
   payload: { surveyId: "csat" },
   formValues: { rating: "5", comment: "Fast and friendly", contactMe: true },
+  timestamp: "2026-10-23T07:20:00.000Z",
+}
+
+const validationCard: Card = {
+  version: "1",
+  type: "card",
+  id: "validation-demo",
+  children: [
+    { type: "input", name: "email", label: "Email", inputType: "email", required: true },
+    { type: "input", name: "code", label: "Promo code", pattern: "[A-Z]{4}\\d{2}", patternMessage: "Looks like ABCD12" },
+    { type: "checkbox", name: "terms", label: "I accept the terms", required: true },
+    { type: "actions", children: [{ type: "button", label: "Submit", action: { type: "submit", id: "validate_demo" } }] },
+  ],
+}
+
+const exampleBlocked: BlockedSubmit = {
+  cardId: "validation-demo",
+  actionId: "validate_demo",
+  errors: { email: "Email is required", terms: "Please check this box to continue" },
   timestamp: "2026-10-23T07:20:00.000Z",
 }
 
@@ -270,6 +290,35 @@ function Guides({ onAction }: { onAction: (e: ActionEvent) => void }) {
             <Rich text="`postback` and `openUrl` never include form values." />
           </li>
         </ul>
+      </Section>
+
+      <Section id="validation" title="Validation" badge="Guide">
+        <p className="text-muted-foreground">
+          <Rich text="Fields can declare rules. The client checks them when a `submit` button is pressed. If any fail, nothing is sent: the errors appear under the fields and clear as the user fixes them. Try submitting the card below empty." />
+        </p>
+        <ul className="ml-4 list-disc space-y-1 text-muted-foreground">
+          <li>
+            <Rich text="`required` on `input`, `textarea`, `select` and `checkbox` (for a checkbox it means it must be ticked)." />
+          </li>
+          <li>
+            <Rich text="`minLength` / `maxLength` on `input` and `textarea`. Empty optional fields skip these." />
+          </li>
+          <li>
+            <Rich text="`pattern` (+ `patternMessage`) on `input`: a regular expression the whole value must match." />
+          </li>
+          <li>
+            <Rich text={'`inputType: "email"` and `"number"` are checked automatically.'} />
+          </li>
+          <li>
+            <Rich text="`postback` and `openUrl` never validate. The backend should still re-check everything it receives." />
+          </li>
+        </ul>
+        <Preview card={validationCard} onAction={onAction} />
+        <CodeBlock code={JSON.stringify(validationCard, null, 2)} />
+        <p className="text-muted-foreground">
+          <Rich text="The playground's Action log records a blocked attempt like this (it is not sent to the backend):" />
+        </p>
+        <CodeBlock code={JSON.stringify(exampleBlocked, null, 2)} />
       </Section>
     </>
   )

@@ -41,6 +41,18 @@ describe("parseCard", () => {
     if (!result.ok) expect(result.issues[0].path).toEqual(["children", 0, "children", 0, "action", "url"])
   })
 
+  test("invalid regex in pattern is a schema error", () => {
+    const result = parseCard(card([{ type: "input", name: "x", pattern: "([" }]))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.issues[0].path).toEqual(["children", 0, "pattern"])
+  })
+
+  test("minLength must not exceed maxLength", () => {
+    const result = parseCard(card([{ type: "textarea", name: "x", minLength: 5, maxLength: 2 }]))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.issues[0].path).toEqual(["children", 0, "minLength"])
+  })
+
   test("actions only accept buttons", () => {
     const result = parseCard(card([{ type: "actions", children: [{ type: "text", content: "x" }] }]))
     expect(result.ok).toBe(false)

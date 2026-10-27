@@ -114,3 +114,56 @@ export function looseCard(source: string): Card | null {
   }
   return null
 }
+
+const isPrefix = (prefix: NodePath, path: NodePath) => prefix.length <= path.length && prefix.every((v, i) => v === path[i])
+
+/** Whether the node at `from` may become a child of `toParent` (empty = card root). */
+export function canMoveTo(card: Card, from: NodePath, toParent: NodePath): boolean {
+  const node = getNode(card, from)
+  if (!node) return false
+  // A node can't be dropped into itself or its own descendants.
+  if (isPrefix(from, toParent)) return false
+  if (toParent.length === 0) return true
+  const parent = getNode(card, toParent)
+  if (!parent || !isContainer(parent)) return false
+  const allowed = allowedChildTypes(parent)
+  return allowed === "any" || allowed.includes(node.type)
+}
+
+/**
+ * Move the node at `from` so it becomes child `toIndex` of `toParent`, where `toIndex` is counted
+ * in the parent's children *before* the move (what a drop indicator points at).
+ * Returns null when the move isn't allowed.
+ */
+export function moveNodeTo(
+  card: Card,
+  from: NodePath,
+  toParent: NodePath,
+  toIndex: number,
+): { card: Card; path: NodePath } | null {
+  if (!canMoveTo(card, from, toParent)) return null
+  const node = getNode(card, from)!
+  const fromParent = parentOf(from)
+  const fromIndex = indexOf(from)
+
+  // Removing the node shifts later siblings (and anything under them) up by one.
+  const parent = toParent.slice()
+  const depth = fromParent.length
+  if (isPrefix(fromParent, parent) && parent.length > depth && parent[depth] > fromIndex) parent[depth]--
+  let index = toIndex
+  if (samePath(fromParent, toParent) && fromIndex < toIndex) index--
+
+  const without = removeNode(card, from)
+  const next = withChildren(without, parent, (children) => {
+    const out = children.slice()
+    out.splice(Math.max(0, Math.min(index, out.length)), 0, node)
+    return out
+  })
+  return { card: next, path: [...parent, Math.max(0, Math.min(index, getChildren(next, parent).length - 1))] }
+}
+
+function getChildren(card: Card, parentPath: NodePath): CardNode[] {
+  if (parentPath.length === 0) return card.children
+  const parent = getNode(card, parentPath)
+  return parent && isContainer(parent) ? parent.children : []
+}
