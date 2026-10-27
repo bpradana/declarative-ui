@@ -1,5 +1,6 @@
-import { MonitorIcon, MoonIcon, SmartphoneIcon, SunIcon } from "lucide-react"
+import { MonitorIcon, MoonIcon, MousePointerClickIcon, SmartphoneIcon, SunIcon } from "lucide-react"
 import { useState } from "react"
+import { Toggle } from "@/components/ui/toggle"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { cn } from "@/lib/utils"
 
@@ -21,7 +22,18 @@ function Bubble({ from, children }: { from: "me" | "bot"; children: React.ReactN
   )
 }
 
-export function ChatPreview({ children, banner }: { children: React.ReactNode; banner?: React.ReactNode }) {
+export function ChatPreview({
+  children,
+  banner,
+  inspect,
+  onInspectChange,
+}: {
+  children: React.ReactNode
+  banner?: React.ReactNode
+  /** Whether clicks in the preview select nodes for the visual editor. */
+  inspect: boolean
+  onInspectChange: (inspect: boolean) => void
+}) {
   const [theme, setTheme] = useState<Theme>("light")
   const [width, setWidth] = useState<Width>("mobile")
 
@@ -30,7 +42,18 @@ export function ChatPreview({ children, banner }: { children: React.ReactNode; b
       <div className="flex h-10 shrink-0 items-center justify-between border-b px-3">
         <span className="text-xs font-medium">Preview</span>
         <div className="flex items-center gap-2">
-          <ToggleGroup type="single" size="sm" variant="outline" value={width} onValueChange={(v) => v && setWidth(v as Width)}>
+          <Toggle
+            size="sm"
+            variant="outline"
+            pressed={inspect}
+            onPressedChange={onInspectChange}
+            aria-label="Select nodes in the preview"
+            title="Click a node in the preview to edit it"
+          >
+            <MousePointerClickIcon /> <span className="hidden sm:inline">Select</span>
+          </Toggle>
+          {/* On small screens the device is already narrow, so the width toggle is hidden. */}
+          <ToggleGroup type="single" size="sm" variant="outline" value={width} className="hidden md:flex" onValueChange={(v) => v && setWidth(v as Width)}>
             <ToggleGroupItem value="mobile" aria-label="Mobile width">
               <SmartphoneIcon />
             </ToggleGroupItem>
@@ -48,7 +71,7 @@ export function ChatPreview({ children, banner }: { children: React.ReactNode; b
           </ToggleGroup>
         </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-auto bg-muted/40 p-4">
+      <div className="min-h-0 flex-1 overflow-auto bg-muted/40 p-2 sm:p-4">
         <div
           className={cn(
             theme === "dark" && "dark",
@@ -57,11 +80,11 @@ export function ChatPreview({ children, banner }: { children: React.ReactNode; b
           )}
         >
           <div className="border-b px-4 py-3 text-sm font-medium">Support Bot</div>
-          <div className="flex flex-1 flex-col gap-3 p-4">
+          <div className="flex flex-1 flex-col gap-3 p-3 sm:p-4">
             <Bubble from="me">Hi, can you show me the latest update?</Bubble>
             <Bubble from="bot">Sure, here it is:</Bubble>
             {banner}
-            <div className={cn(width === "mobile" ? "w-[85%]" : "w-full max-w-[420px]")}>{children}</div>
+            <div className={cn(width === "mobile" ? "w-[90%]" : "w-full max-w-[420px]")}>{children}</div>
             <Bubble from="me">Thanks!</Bubble>
           </div>
         </div>

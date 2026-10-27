@@ -1,6 +1,6 @@
 import { cardJsonSchema } from "@/schema/json-schema"
 
-type JsonSchema = {
+export type JsonSchema = {
   type?: string
   const?: unknown
   enum?: unknown[]
@@ -11,6 +11,7 @@ type JsonSchema = {
   oneOf?: JsonSchema[]
   anyOf?: JsonSchema[]
   additionalProperties?: unknown
+  minItems?: number
   description?: string
 }
 
@@ -23,7 +24,7 @@ export type PropRow = {
   depth: number
 }
 
-const defs = cardJsonSchema.$defs as Record<string, JsonSchema>
+export const defs = cardJsonSchema.$defs as Record<string, JsonSchema>
 
 const refName = (ref: string) => {
   const name = ref.split("/").pop()!
@@ -62,7 +63,7 @@ function rows(schema: JsonSchema, prefix = "", depth = 0): PropRow[] {
   return out
 }
 
-function defForNodeType(nodeType: string): JsonSchema | undefined {
+export function defForNodeType(nodeType: string): JsonSchema | undefined {
   return Object.values(defs).find((d) => d.properties?.type?.const === nodeType)
 }
 

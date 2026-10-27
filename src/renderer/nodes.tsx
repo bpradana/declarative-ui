@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import type { CardNode } from "@/schema/card"
+import { type NodePath, samePath } from "@/visual/tree"
 import { useRenderer } from "./context"
 
 type NodeOf<T extends CardNode["type"]> = Extract<CardNode, { type: T }>
@@ -133,7 +134,25 @@ function ButtonView({ node }: { node: NodeOf<"button"> }) {
   )
 }
 
-export function NodeView({ node }: { node: CardNode }) {
+export function NodeView({ node, path }: { node: CardNode; path: NodePath }) {
+  const { inspect } = useRenderer()
+  if (!inspect) return <NodeContent node={node} path={path} />
+  // Clicks are intercepted by CardRenderer, which reads `data-path` to select the innermost node.
+  return (
+    <div
+      data-path={path.join(".")}
+      className={cn(
+        "cursor-pointer rounded-sm outline-offset-2 outline-primary/60",
+        "[&:hover:not(:has([data-path]:hover))]:outline [&:hover:not(:has([data-path]:hover))]:outline-dashed",
+        samePath(inspect.selected, path) && "outline-2 outline-primary outline-solid",
+      )}
+    >
+      <NodeContent node={node} path={path} />
+    </div>
+  )
+}
+
+function NodeContent({ node, path }: { node: CardNode; path: NodePath }) {
   switch (node.type) {
     case "header":
       return <HeaderView node={node} />
@@ -185,7 +204,7 @@ export function NodeView({ node }: { node: CardNode }) {
           )}
         >
           {node.children.map((child, i) => (
-            <NodeView key={i} node={child} />
+            <NodeView key={i} node={child} path={[...path, i]} />
           ))}
         </div>
       )
@@ -195,7 +214,7 @@ export function NodeView({ node }: { node: CardNode }) {
       return (
         <div className="flex flex-wrap justify-end gap-2">
           {node.children.map((child, i) => (
-            <ButtonView key={i} node={child} />
+            <NodeView key={i} node={child} path={[...path, i]} />
           ))}
         </div>
       )

@@ -9,10 +9,12 @@ describe("component docs", () => {
     expect(componentDocs.map((d) => d.type).sort()).toEqual([...NODE_TYPES].sort())
   })
 
-  test.each(componentDocs.map((d) => [d.type, d] as const))("%s example is a valid node", (_t, doc) => {
-    const result = parseCard(JSON.stringify({ version: "1", type: "card", children: [doc.example] }))
+  const examples = componentDocs.flatMap((d) => d.examples.map((ex) => [d.type, ex.title, d.type, ex.node] as const))
+
+  test.each(examples)("%s / %s example is a valid node", (_t, _title, type, node) => {
+    const result = parseCard(JSON.stringify({ version: "1", type: "card", children: [node] }))
     if (!result.ok) throw new Error(JSON.stringify(result.issues))
-    expect(doc.example.type).toBe(doc.type)
+    expect(node.type).toBe(type)
   })
 })
 

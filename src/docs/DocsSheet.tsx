@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 import { CardRenderer } from "@/renderer/CardRenderer"
 import type { ActionEvent } from "@/renderer/context"
 import type { Card, CardNode } from "@/schema/card"
-import { type ComponentDoc, componentDocs, docId, GROUPS } from "./components"
+import { type ComponentDoc, componentDocs, type DocExample, docId, GROUPS } from "./components"
 import { getActionProps, getCardProps, getProps, type PropRow } from "./props"
 
 type Props = {
@@ -44,7 +44,7 @@ const minimalCard: Card = {
 }
 
 function matches(doc: ComponentDoc, query: string) {
-  const haystack = [doc.type, doc.group, doc.summary, ...(doc.notes ?? [])].join(" ").toLowerCase()
+  const haystack = [doc.type, doc.group, doc.summary, ...doc.examples.map((e) => e.title), ...(doc.notes ?? [])].join(" ").toLowerCase()
   return haystack.includes(query)
 }
 
@@ -156,34 +156,28 @@ function Preview({ card, onAction }: { card: Card; onAction: (e: ActionEvent) =>
   )
 }
 
-function ComponentSection({
-  doc,
-  canInsert,
-  onInsert,
-  onAction,
-}: {
-  doc: ComponentDoc
+type ExampleProps = {
+  example: DocExample
   canInsert: boolean
   onInsert: (node: CardNode) => void
   onAction: (e: ActionEvent) => void
-}) {
-  const card = useMemo<Card>(() => ({ version: "1", type: "card", children: [doc.example] }), [doc])
-  const rows = useMemo(() => getProps(doc.type), [doc.type])
+}
+
+function Example({ example, canInsert, onInsert, onAction }: ExampleProps) {
+  const card = useMemo<Card>(() => ({ version: "1", type: "card", children: [example.node] }), [example])
 
   const insertButton = (
-    <Button variant="ghost" size="xs" disabled={!canInsert} onClick={() => onInsert(doc.example)}>
+    <Button variant="ghost" size="xs" disabled={!canInsert} onClick={() => onInsert(example.node)}>
       <PlusIcon /> Insert
     </Button>
   )
 
   return (
-    <Section id={doc.type} title={<span className="font-mono">{doc.type}</span>} badge={doc.group}>
-      <p className="text-muted-foreground">
-        <Rich text={doc.summary} />
-      </p>
+    <div className="space-y-2">
+      <h4 className="text-xs font-medium text-muted-foreground">{example.title}</h4>
       <Preview card={card} onAction={onAction} />
       <CodeBlock
-        code={JSON.stringify(doc.example, null, 2)}
+        code={JSON.stringify(example.node, null, 2)}
         actions={
           canInsert ? (
             insertButton
@@ -197,6 +191,21 @@ function ComponentSection({
           )
         }
       />
+    </div>
+  )
+}
+
+function ComponentSection({ doc, ...rest }: { doc: ComponentDoc } & Omit<ExampleProps, "example">) {
+  const rows = useMemo(() => getProps(doc.type), [doc.type])
+
+  return (
+    <Section id={doc.type} title={<span className="font-mono">{doc.type}</span>} badge={doc.group}>
+      <p className="text-muted-foreground">
+        <Rich text={doc.summary} />
+      </p>
+      {doc.examples.map((example) => (
+        <Example key={example.title} example={example} {...rest} />
+      ))}
       <PropsTable rows={rows} />
       {doc.notes && (
         <ul className="ml-4 list-disc space-y-1 text-muted-foreground">
@@ -274,7 +283,7 @@ export function DocsSheet({ open, onOpenChange, canInsert, onInsert, onAction }:
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full gap-0 p-0 data-[side=right]:sm:max-w-3xl">
+      <SheetContent side="right" className="gap-0 p-0 data-[side=right]:w-full data-[side=right]:sm:w-3/4 data-[side=right]:sm:max-w-3xl">
         <SheetHeader className="border-b">
           <SheetTitle>Component docs</SheetTitle>
           <SheetDescription>Every building block a card supports, with live examples.</SheetDescription>
@@ -286,6 +295,16 @@ export function DocsSheet({ open, onOpenChange, canInsert, onInsert, onAction }:
               placeholder="Search components…"
               className="pl-8"
             />
+          </div>
+          {/* The side nav doesn't fit on phones, so offer a scrollable row of jump links instead. */}
+          <div className="-mx-4 flex gap-1 overflow-x-auto px-4 pt-1 sm:hidden">
+            {[...(showGuides ? GUIDES.map((g) => ({ key: g.key, label: g.title })) : []), ...docs.map((d) => ({ key: d.type, label: d.type }))].map(
+              (item) => (
+                <Button key={item.key} variant="outline" size="xs" className="shrink-0" onClick={() => scrollTo(item.key)}>
+                  {item.label}
+                </Button>
+              ),
+            )}
           </div>
         </SheetHeader>
 
@@ -315,7 +334,7 @@ export function DocsSheet({ open, onOpenChange, canInsert, onInsert, onAction }:
             })}
           </nav>
 
-          <div className="min-w-0 flex-1 space-y-8 overflow-y-auto p-6">
+          <div className="min-w-0 flex-1 space-y-8 overflow-y-auto p-4 sm:p-6">
             {showGuides && <Guides onAction={onAction} />}
             {docs.map((doc) => (
               <ComponentSection key={doc.type} doc={doc} canInsert={canInsert} onInsert={onInsert} onAction={onAction} />

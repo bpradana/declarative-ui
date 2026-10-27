@@ -12,3 +12,15 @@ test.each(templates.map((t) => [t.id, t] as const))("renders template %s", (_id,
   // Trailing `actions` nodes land in the footer.
   expect(html).toContain('data-slot="card-footer"')
 })
+
+test("inspect mode tags every node with its path", () => {
+  const result = parseCard(templateSource(templates.find((t) => t.id === "notification")!))
+  if (!result.ok) throw new Error("template invalid")
+  const plain = renderToString(<CardRenderer card={result.card} onAction={() => {}} />)
+  expect(plain).not.toContain("data-path")
+  const html = renderToString(
+    <CardRenderer card={result.card} onAction={() => {}} inspect={{ selected: [0, 1], onSelect: () => {} }} />,
+  )
+  // Nested stack children and footer buttons get their own paths.
+  for (const path of ["0", "0.0", "0.1", "1", "2", "3", "3.0"]) expect(html).toContain(`data-path="${path}"`)
+})

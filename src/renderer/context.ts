@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react"
 import type { Action } from "@/schema/card"
+import type { NodePath } from "@/visual/tree"
 
 export type FormValue = string | boolean
 export type FormValues = Record<string, FormValue>
@@ -14,10 +15,17 @@ export type ActionEvent = {
   timestamp: string
 }
 
+/** When set, clicks select nodes instead of interacting with them (visual editor). */
+export type Inspect = {
+  selected: NodePath | null
+  onSelect: (path: NodePath) => void
+}
+
 type RendererContextValue = {
   values: FormValues
   setValue: (name: string, value: FormValue) => void
   trigger: (action: Action) => void
+  inspect?: Inspect
 }
 
 export const RendererContext = createContext<RendererContextValue | null>(null)
